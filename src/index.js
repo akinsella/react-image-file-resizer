@@ -91,38 +91,36 @@ class Resizer {
     return canvas.toDataURL(`image/${compressFormat}`, qualityDecimal);
   }
 
-  static b64toByteArrays(b64Data, contentType) {
-    contentType = contentType || "image/jpeg";
-    var sliceSize = 512;
+  static b64toByteArrays(b64Data) {
+    const sliceSize = 1024; // 1024 gives best performance
+    const base64Marker = /^data:image\/(png|jpeg|jpg|webp);base64,/;
+    
+    const byteCharacters = atob(b64Data.replace(base64Marker, ""));
+    const byteLength = byteCharacters.length;
+    const byteArrays = [];
 
-    var byteCharacters = atob(
-      b64Data.toString().replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "")
-    );
-    var byteArrays = [];
-
-    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      var slice = byteCharacters.slice(offset, offset + sliceSize);
-
-      var byteNumbers = new Array(slice.length);
-      for (var i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-
-      var byteArray = new Uint8Array(byteNumbers);
-
-      byteArrays.push(byteArray);
+    for (let offset = 0; offset < byteLength; offset += sliceSize) {
+        const sliceLength = Math.min(sliceSize, byteLength - offset);
+        const byteArray = new Uint8Array(sliceLength);
+        
+        for (let i = 0; i < sliceLength; i++) {
+            byteArray[i] = byteCharacters.charCodeAt(offset + i);
+        }
+        
+        byteArrays.push(byteArray);
     }
+
     return byteArrays;
-  }
+}
 
   static b64toBlob(b64Data, contentType) {
-    const byteArrays = this.b64toByteArrays(b64Data, contentType);
+    const byteArrays = this.b64toByteArrays(b64Data);
     var blob = new Blob(byteArrays, { type: contentType, lastModified: new Date() });
     return blob;
   }
 
   static b64toFile(b64Data, fileName, contentType) {
-    const byteArrays = this.b64toByteArrays(b64Data, contentType);
+    const byteArrays = this.b64toByteArrays(b64Data);
     const file = new File(byteArrays, fileName, { type: contentType, lastModified: new Date() });
     return file;
   }
